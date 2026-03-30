@@ -76,8 +76,23 @@ export function ChatSupportWidget() {
 
   const shouldShowWidget = shouldRenderOnThisRoute && isGloballyEnabled
 
+  // Fallback prikazujemo SAMO ako je korisnik offline (navigator.onLine === false) i Crisp je offline
+  const [isReallyOffline, setIsReallyOffline] = useState(false)
+  useEffect(() => {
+    function updateStatus() {
+      setIsReallyOffline(typeof navigator !== "undefined" && !navigator.onLine)
+    }
+    updateStatus()
+    window.addEventListener("online", updateStatus)
+    window.addEventListener("offline", updateStatus)
+    return () => {
+      window.removeEventListener("online", updateStatus)
+      window.removeEventListener("offline", updateStatus)
+    }
+  }, [])
+
   const canShowFallback =
-    shouldShowWidget && isOnline === false && (supportPhone || whatsappNumber)
+    shouldShowWidget && isOnline === false && isReallyOffline && (supportPhone || whatsappNumber)
 
   useEffect(() => {
     let cancelled = false
@@ -176,9 +191,29 @@ export function ChatSupportWidget() {
 
   if (!canShowFallback) return null
 
+  // Lokalizacija fallback widgeta
+  let locale: "sr" | "en" = "sr"
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(/locale=(sr|en)/)
+    if (match) locale = match[1] as "sr" | "en"
+  }
+  const t = locale === "en"
+    ? {
+      offline: "Operator is currently offline",
+      call: "Call",
+      whatsapp: "WhatsApp"
+    }
+    : {
+      offline: "Operater trenutno nije online",
+      call: "Pozovi",
+      whatsapp: "WhatsApp"
+    }
+
   const cleanWhatsappNumber = normalizeWhatsappNumber(whatsappNumber)
   const whatsappText = encodeURIComponent(
-    "Zdravo, treba mi pomoc oko transfera."
+    locale === "en"
+      ? "Hello, I need help with a transfer."
+      : "Zdravo, treba mi pomoć oko transfera."
   )
   const whatsappHref = cleanWhatsappNumber
     ? `https://wa.me/${cleanWhatsappNumber}?text=${whatsappText}`
@@ -186,7 +221,7 @@ export function ChatSupportWidget() {
 
   return (
     <div className="fixed bottom-4 left-4 z-50 rounded-xl border bg-card/95 p-3 shadow-xl backdrop-blur-sm">
-      <p className="mb-2 text-xs text-muted-foreground">Operater trenutno nije online</p>
+      <p className="mb-2 text-xs text-muted-foreground">{t.offline}</p>
       <div className="flex items-center gap-2">
         {supportPhone ? (
           <a
@@ -194,7 +229,7 @@ export function ChatSupportWidget() {
             className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
           >
             <PhoneCallIcon />
-            Pozovi
+            {t.call}
           </a>
         ) : null}
         {whatsappHref ? (
@@ -205,7 +240,7 @@ export function ChatSupportWidget() {
             className={cn(buttonVariants({ variant: "default", size: "sm" }))}
           >
             <MessageCircleIcon />
-            WhatsApp
+            {t.whatsapp}
           </a>
         ) : null}
       </div>

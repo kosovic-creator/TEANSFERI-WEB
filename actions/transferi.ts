@@ -14,6 +14,7 @@ import {
   parseTimeOnly,
 } from "@/actions/transfer-utils"
 import { sendTransferReceivedSms, type SmsSendResult } from "@/lib/twilio-sms"
+import { sendConfirmationEmail } from "@/lib/send-confirmation-email"
 
 function addMinutesToTime(time: Date, minutes: number): Date {
   return new Date(time.getTime() + minutes * 60 * 1000)
@@ -121,6 +122,20 @@ export async function createTransferSafe(formData: FormData): Promise<CreateTran
       korisnik: transfer.korisnik ?? "-",
       brojLetaNapomena: transfer.brojLetaNapomena ?? "-",
     })
+
+    // Slanje email potvrde ako je email unesen
+    const email = formData.get("emailKorisnika")
+    if (typeof email === "string" && email.includes("@")) {
+      try {
+        await sendConfirmationEmail(email, {
+          korisnik: transfer.korisnik ?? "Korisnik",
+          datum: transfer.datum.toISOString().slice(0, 10),
+          relacija: transfer.relacija,
+        })
+      } catch (e) {
+        // Ignoriši grešku slanja emaila, ne blokira transfer
+      }
+    }
 
     return { ok: true, transfer, sms }
   } catch (error) {

@@ -32,6 +32,7 @@ function LanguageSwitcher({ current, onChange }: { current: Locale, onChange: (l
 	)
 }
 import { translations } from "@/lib/transferi-i18n"
+// ...existing code...
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { useFormStatus } from "react-dom"
@@ -250,17 +251,24 @@ export default function DodajTransferPage() {
 						<Input name="iznos" type="number" min="0" step="0.01" defaultValue="20" />
 					</div>
 
+
 					{!isApartmanAerodrom ? (
-						<div className="space-y-2">
-							<label className="text-sm font-medium">{t.korisnik}</label>
-							<Input
-								name="korisnik"
-								placeholder={t.korisnikPlaceholder}
-								value={korisnik}
-								onChange={(event) => setKorisnik(event.target.value)}
-								required
-							/>
-						</div>
+						<>
+							<div className="space-y-2">
+								<label className="text-sm font-medium">{t.korisnik}</label>
+								<Input
+									name="korisnik"
+									placeholder={t.korisnikPlaceholder}
+									value={korisnik}
+									onChange={(event) => setKorisnik(event.target.value)}
+									required
+								/>
+							</div>
+							<div className="space-y-2">
+								<label className="text-sm font-medium">{t.emailKorisnika ?? (locale === 'en' ? 'User email (optional)' : 'Email korisnika (opciono)')}</label>
+								<Input name="emailKorisnika" type="email" placeholder={t.emailKorisnikaPlaceholder ?? (locale === 'en' ? 'e.g. user@email.com' : 'npr. korisnik@email.com')} />
+							</div>
+						</>
 					) : <div />}
 
 					{!isApartmanAerodrom ? (

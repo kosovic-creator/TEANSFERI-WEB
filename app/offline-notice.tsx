@@ -2,6 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 
+
+function getLocaleFromCookie(): "sr" | "en" {
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(/locale=(sr|en)/)
+    if (match) return match[1] as "sr" | "en"
+  }
+  return "sr"
+}
+
 export function OfflineNotice() {
   const [isOffline, setIsOffline] = useState(false);
   const [showOnline, setShowOnline] = useState(false);
@@ -46,7 +55,26 @@ export function OfflineNotice() {
     };
   }, []);
 
+  const [locale, setLocale] = useState<"sr" | "en">(getLocaleFromCookie())
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLocale(getLocaleFromCookie())
+    }, 500)
+    return () => clearInterval(interval)
+  }, [])
+
   if (!isOffline && !showOnline) return null;
+
+  const t = locale === "en"
+    ? {
+      offline: "No internet connection. Offline content is shown where available.",
+      online: "You are back online."
+    }
+    : {
+      offline: "Nema internet konekcije. Prikazuje se offline sadržaj gdje je dostupan.",
+      online: "Ponovo ste online."
+    }
 
   return (
     <div
@@ -54,9 +82,7 @@ export function OfflineNotice() {
         isOffline ? "bg-red-600" : "bg-emerald-600"
       }`}
     >
-      {isOffline
-        ? "Nema internet konekcije. Prikazuje se offline sadrzaj gde je dostupan."
-        : "Ponovo ste online."}
+      {isOffline ? t.offline : t.online}
     </div>
-  );
+  )
 }
