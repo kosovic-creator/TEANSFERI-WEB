@@ -250,7 +250,10 @@ export default function DodajTransferPage() {
 						<label className="text-sm font-medium">{t.iznos}</label>
 						<Input name="iznos" type="number" min="0" step="0.01" defaultValue="20" />
 					</div>
-
+	<div className="space-y-2">
+								<label className="text-sm font-medium">{t.emailKorisnika ?? (locale === 'en' ? 'User email (optional)' : 'Email korisnika (opciono)')}</label>
+								<Input name="emailKorisnika" type="email" placeholder={t.emailKorisnikaPlaceholder ?? (locale === 'en' ? 'e.g. user@email.com' : 'npr. korisnik@email.com')} />
+							</div>
 
 					{!isApartmanAerodrom ? (
 						<>
