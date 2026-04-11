@@ -86,23 +86,46 @@ export async function createTransfer(formData: FormData): Promise<TransferRecord
 
   await assertNoTransferOverlap(datum, vrijeme)
 
-  const transfer = await prisma.transfer.create({
-    data: {
-      relacija,
-      brojLetaNapomena,
-      iznos: getOptionalNumber(formData, "iznos"),
-      datum,
-      vrijeme,
-      datumVrijemeUtc,
-      alarmEnabled,
-      korisnik,
-      brojTelefona,
-    },
+  const iznos = getOptionalNumber(formData, "iznos")
+
+  const transfer = await prisma.$transaction(async (tx) => {
+    const created = await tx.transfer.create({
+      data: {
+        relacija,
+        brojLetaNapomena,
+        iznos,
+        datum,
+        vrijeme,
+        datumVrijemeUtc,
+        alarmEnabled,
+        korisnik,
+        brojTelefona,
+      },
+    })
+
+    await tx.arhivaTransfera.create({
+      data: {
+        id: created.id,
+        relacija: created.relacija,
+        brojLetaNapomena: created.brojLetaNapomena,
+        iznos: created.iznos,
+        datum: created.datum,
+        vrijeme: created.vrijeme,
+        datumVrijemeUtc: created.datumVrijemeUtc,
+        alarmEnabled: created.alarmEnabled,
+        alarmSentAt: created.alarmSentAt,
+        korisnik: created.korisnik,
+        brojTelefona: created.brojTelefona,
+      },
+    })
+
+    return created
   })
 
   revalidatePath("/transferi")
   revalidatePath("/")
   revalidatePath("/transferi/dodaj")
+  revalidatePath("/transferi/arhiva")
 
   return transfer
 }
@@ -227,12 +250,25 @@ export async function updateTransfer(formData: FormData): Promise<TransferRecord
 export async function deleteTransfer(formData: FormData): Promise<TransferRecord> {
   const id = getRequiredString(formData, "id")
 
-  const transfer = await prisma.$transaction(async (tx: { transfer: { delete: (arg0: { where: { id: string } }) => any }; arhivaTransfera: { create: (arg0: { data: { id: any; relacija: any; brojLetaNapomena: any; iznos: any; datum: any; vrijeme: any; datumVrijemeUtc: any; alarmEnabled: any; alarmSentAt: any; korisnik: any; brojTelefona: any } }) => any } }) => {
+  const transfer = await prisma.$transaction(async (tx) => {
     const deleted = await tx.transfer.delete({ where: { id } })
 
-    await tx.arhivaTransfera.create({
-      data: {
+    await tx.arhivaTransfera.upsert({
+      where: { id: deleted.id },
+      create: {
         id: deleted.id,
+        relacija: deleted.relacija,
+        brojLetaNapomena: deleted.brojLetaNapomena,
+        iznos: deleted.iznos,
+        datum: deleted.datum,
+        vrijeme: deleted.vrijeme,
+        datumVrijemeUtc: deleted.datumVrijemeUtc,
+        alarmEnabled: deleted.alarmEnabled,
+        alarmSentAt: deleted.alarmSentAt,
+        korisnik: deleted.korisnik,
+        brojTelefona: deleted.brojTelefona,
+      },
+      update: {
         relacija: deleted.relacija,
         brojLetaNapomena: deleted.brojLetaNapomena,
         iznos: deleted.iznos,
