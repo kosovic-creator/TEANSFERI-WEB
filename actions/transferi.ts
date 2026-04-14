@@ -88,44 +88,23 @@ export async function createTransfer(formData: FormData): Promise<TransferRecord
 
   const iznos = getOptionalNumber(formData, "iznos")
 
-  const transfer = await prisma.$transaction(async (tx) => {
-    const created = await tx.transfer.create({
-      data: {
-        relacija,
-        brojLetaNapomena,
-        iznos,
-        datum,
-        vrijeme,
-        datumVrijemeUtc,
-        alarmEnabled,
-        korisnik,
-        brojTelefona,
-      },
-    })
-
-    await tx.arhivaTransfera.create({
-      data: {
-        id: created.id,
-        relacija: created.relacija,
-        brojLetaNapomena: created.brojLetaNapomena,
-        iznos: created.iznos,
-        datum: created.datum,
-        vrijeme: created.vrijeme,
-        datumVrijemeUtc: created.datumVrijemeUtc,
-        alarmEnabled: created.alarmEnabled,
-        alarmSentAt: created.alarmSentAt,
-        korisnik: created.korisnik,
-        brojTelefona: created.brojTelefona,
-      },
-    })
-
-    return created
+  const transfer = await prisma.transfer.create({
+    data: {
+      relacija,
+      brojLetaNapomena,
+      iznos,
+      datum,
+      vrijeme,
+      datumVrijemeUtc,
+      alarmEnabled,
+      korisnik,
+      brojTelefona,
+    },
   })
 
   revalidatePath("/transferi")
   revalidatePath("/")
   revalidatePath("/transferi/dodaj")
-  revalidatePath("/transferi/arhiva")
 
   return transfer
 }
